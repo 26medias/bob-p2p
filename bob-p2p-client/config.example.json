@@ -1,0 +1,53 @@
+{
+    "wallet": {
+        "address": "YOUR_SOLANA_WALLET_ADDRESS_HERE",
+        "privateKey": "YOUR_PRIVATE_KEY_HERE (3 formats supported - see below)"
+    },
+    "_comment_privateKey_formats": {
+        "mnemonic": "word1 word2 word3 ... (12 or 24 words)",
+        "array": "[123, 45, 67, ...] (from wallet.json)",
+        "base58": "5Kb8kLf4... (base58 encoded string)"
+    },
+    "token": {
+        "symbol": "BOB",
+        "mint": "F5k1hJjTsMpw8ATJQ1Nba9dpRNSvVFGRaznjiCNUvghH"
+    },
+    "aggregators": [
+        "http://localhost:8080"
+    ],
+    "solana": {
+        "network": "devnet",
+        "rpcUrl": "https://api.devnet.solana.com",
+        "confirmations": 1
+    },
+    "provider": {
+        "enabled": true,
+        "port": 8000,
+        "host": "0.0.0.0",
+        "publicEndpoint": "http://localhost:8000",
+        "database": {
+            "path": "/home/user/.bob-client/provider.db"
+        },
+        "queue": {
+            "codeExpiry": 60,
+            "maxConcurrent": 2,
+            "maxQueueLength": 10
+        },
+        "results": {
+            "retention": 86400,
+            "storagePath": "/home/user/.bob-client/results",
+            "maxStorageGB": 100
+        }
+    },
+    "consumer": {
+        "enabled": true,
+        "timeout": 30000,
+        "retryAttempts": 3
+    },
+    "security": {
+        "rateLimit": {
+            "enabled": true,
+            "queueRequestsPerMinute": 10
+        }
+    }
+}

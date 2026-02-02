@@ -1,0 +1,49 @@
+{
+    "wallet": {
+        "address": "YOUR_SOLANA_WALLET_ADDRESS_HERE",
+        "privateKey": "YOUR_PRIVATE_KEY_HERE (3 formats supported - see below)"
+    },
+    "_comment_privateKey_formats": {
+        "mnemonic": "word1 word2 word3 ... (12 or 24 words)",
+        "array": "[123, 45, 67, ...] (from wallet.json)",
+        "base58": "5Kb8kLf4... (base58 encoded string)"
+    },
+    "token": {
+        "symbol": "BOB",
+        "mint": "F5k1hJjTsMpw8ATJQ1Nba9dpRNSvVFGRaznjiCNUvghH"
+    },
+    "database": {
+        "type": "sqlite",
+        "path": "/home/user/.bob-aggregator/aggregator.db"
+    },
+    "server": {
+        "port": 8080,
+        "host": "0.0.0.0",
+        "cors": {
+            "enabled": true,
+            "origins": ["*"]
+        }
+    },
+    "access": {
+        "type": "free",
+        "fee": 0,
+        "validityDays": 0
+    },
+    "solana": {
+        "network": "devnet",
+        "rpcUrl": "https://api.devnet.solana.com",
+        "confirmations": 1
+    },
+    "health": {
+        "checkInterval": 300,
+        "timeout": 10,
+        "maxFailures": 3
+    },
+    "security": {
+        "rateLimit": {
+            "enabled": true,
+            "requestsPerMinute": 100,
+            "requestsPerHour": 5000
+        }
+    }
+}

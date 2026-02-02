@@ -1,0 +1,212 @@
+{
+    "apis": [
+        {
+            "id": "echo-api-v1",
+            "name": "Echo API",
+            "description": "Simple echo service for testing",
+            "version": "1.0.0",
+            "endpoint": "/echo",
+            "method": "POST",
+            "handler": "./handlers/echo.js",
+            "pricing": {
+                "amount": 0.01,
+                "unit": "per-call"
+            },
+            "capacity": {
+                "concurrent": 5,
+                "queueMax": 20,
+                "queueTimeout": 60
+            },
+            "execution": {
+                "estimatedDuration": 1,
+                "maxDuration": 10,
+                "resultRetention": 3600
+            },
+            "schema": {
+                "request": {
+                    "type": "object",
+                    "properties": {
+                        "message": {
+                            "type": "string",
+                            "maxLength": 1000,
+                            "description": "Message to echo back"
+                        }
+                    },
+                    "required": ["message"]
+                },
+                "response": {
+                    "type": "object",
+                    "properties": {
+                        "echo": {
+                            "type": "string"
+                        },
+                        "timestamp": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "category": ["testing", "utility"],
+            "tags": ["echo", "test", "simple"]
+        },
+        {
+            "id": "text-to-image-v1",
+            "name": "Stable Diffusion Image Generator",
+            "description": "Generate images from text prompts using Stable Diffusion XL",
+            "version": "1.0.0",
+            "endpoint": "/generate-image",
+            "method": "POST",
+            "handler": "./handlers/image-generator.js",
+            "pricing": {
+                "amount": 0.1,
+                "unit": "per-call"
+            },
+            "capacity": {
+                "concurrent": 2,
+                "queueMax": 10,
+                "queueTimeout": 60
+            },
+            "execution": {
+                "estimatedDuration": 45,
+                "maxDuration": 120,
+                "resultRetention": 86400
+            },
+            "schema": {
+                "request": {
+                    "type": "object",
+                    "properties": {
+                        "prompt": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500,
+                            "description": "Text description of desired image"
+                        },
+                        "negativePrompt": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "description": "What to avoid in the image"
+                        },
+                        "steps": {
+                            "type": "number",
+                            "minimum": 20,
+                            "maximum": 100,
+                            "default": 50,
+                            "description": "Number of inference steps"
+                        },
+                        "width": {
+                            "type": "number",
+                            "enum": [512, 768, 1024],
+                            "default": 1024,
+                            "description": "Image width in pixels"
+                        },
+                        "height": {
+                            "type": "number",
+                            "enum": [512, 768, 1024],
+                            "default": 1024,
+                            "description": "Image height in pixels"
+                        },
+                        "seed": {
+                            "type": "number",
+                            "description": "Random seed for reproducibility (optional)"
+                        }
+                    },
+                    "required": ["prompt"]
+                },
+                "response": {
+                    "type": "object",
+                    "properties": {
+                        "imageUrl": {
+                            "type": "string",
+                            "description": "URL to download the generated image"
+                        },
+                        "seed": {
+                            "type": "number",
+                            "description": "Seed used for generation"
+                        }
+                    }
+                }
+            },
+            "category": ["ml", "image", "ai"],
+            "tags": ["stable-diffusion", "sdxl", "image-generation", "text-to-image", "ai"]
+        },
+        {
+            "id": "text-to-video-v1",
+            "name": "Text to Video Generator",
+            "description": "Generate short videos from text prompts using Stable Diffusion Video",
+            "version": "1.0.0",
+            "endpoint": "/generate-video",
+            "method": "POST",
+            "handler": "./handlers/video-generator.js",
+            "pricing": {
+                "amount": 0.5,
+                "unit": "per-call"
+            },
+            "capacity": {
+                "concurrent": 1,
+                "queueMax": 5,
+                "queueTimeout": 60
+            },
+            "execution": {
+                "estimatedDuration": 300,
+                "maxDuration": 600,
+                "resultRetention": 86400
+            },
+            "schema": {
+                "request": {
+                    "type": "object",
+                    "properties": {
+                        "prompt": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500,
+                            "description": "Text description of desired video"
+                        },
+                        "duration": {
+                            "type": "number",
+                            "minimum": 5,
+                            "maximum": 30,
+                            "default": 10,
+                            "description": "Video duration in seconds"
+                        },
+                        "fps": {
+                            "type": "number",
+                            "enum": [24, 30],
+                            "default": 24,
+                            "description": "Frames per second"
+                        },
+                        "resolution": {
+                            "type": "string",
+                            "enum": ["512x512", "1024x576"],
+                            "default": "1024x576",
+                            "description": "Video resolution"
+                        }
+                    },
+                    "required": ["prompt"]
+                },
+                "response": {
+                    "type": "object",
+                    "properties": {
+                        "videoUrl": {
+                            "type": "string",
+                            "description": "URL to download the generated video"
+                        },
+                        "duration": {
+                            "type": "number",
+                            "description": "Actual video duration in seconds"
+                        },
+                        "resolution": {
+                            "type": "string",
+                            "description": "Video resolution"
+                        },
+                        "frameCount": {
+                            "type": "number",
+                            "description": "Total frames in video"
+                        }
+                    }
+                }
+            },
+            "category": ["ml", "video", "ai"],
+            "tags": ["stable-diffusion", "video-generation", "text-to-video", "ai"]
+        }
+    ]
+}

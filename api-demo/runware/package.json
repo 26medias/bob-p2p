@@ -1,0 +1,17 @@
+{
+  "name": "runware-api-demo",
+  "version": "1.0.0",
+  "description": "Runware API handlers for Bob P2P",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

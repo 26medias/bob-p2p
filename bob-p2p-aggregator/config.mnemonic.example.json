@@ -1,0 +1,27 @@
+{
+    "_comment": "Example config using MNEMONIC format (simplest option)",
+    "wallet": {
+        "address": "YOUR_SOLANA_WALLET_ADDRESS",
+        "privateKey": "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12"
+    },
+    "token": {
+        "symbol": "BOB",
+        "mint": "F5k1hJjTsMpw8ATJQ1Nba9dpRNSvVFGRaznjiCNUvghH"
+    },
+    "database": {
+        "type": "sqlite",
+        "path": "/tmp/bob-aggregator.db"
+    },
+    "server": {
+        "port": 8080,
+        "host": "0.0.0.0"
+    },
+    "access": {
+        "type": "free"
+    },
+    "solana": {
+        "network": "devnet",
+        "rpcUrl": "https://api.devnet.solana.com",
+        "confirmations": 1
+    }
+}
