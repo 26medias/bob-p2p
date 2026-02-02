@@ -34,14 +34,14 @@ V2 is a complete redesign focused on simplicity, security, and real-world usabil
 - Defines APIs in `api.json` (name, endpoint, pricing, capacity)
 - Manages request queue and rate limits
 - Verifies payments on-chain before execution
-- Returns results via polling endpoint
+- Streams results directly to consumers via P2P (no public server/SSL required)
 
 ### API Consumer
 - Discovers APIs via aggregator
 - Requests queue position before payment (capacity check)
 - Pays after confirming availability
 - Calls API with payment proof + queue code
-- Polls for results (async execution)
+- Polls for results and downloads files via P2P streaming
 
 ### Aggregator
 - Indexes APIs from providers
@@ -108,6 +108,69 @@ Traditional "pay-then-call" model fails for slow APIs:
 - **Capacity awareness**: Provider controls queue depth
 - **Fair ordering**: First to get queue code, first served
 - **DOS protection**: Queue codes expire if not used
+
+---
+
+## P2P File Streaming
+
+### The Problem
+Traditional API result delivery requires providers to run publicly accessible servers:
+- Providers must expose ports to the internet
+- SSL certificates required for secure transfer
+- Complex firewall and networking setup
+- Defeats the purpose of "P2P" architecture
+
+### The Solution: Direct P2P Streaming
+
+Results are streamed directly from provider to consumer without public URLs:
+
+```
+1. Provider executes job and saves result file locally
+   - File stored in provider's local storage directory
+   - Filename recorded in database
+
+2. Consumer polls job status
+   - Job returns resultFilename instead of resultUrl
+
+3. Consumer automatically streams file via P2P
+   GET /job/{jobId}/download → Provider streams file
+
+4. Consumer saves file to local output directory
+   - Configured via consumer.results.outputPath
+   - Returns local file path to calling application
+```
+
+### Benefits
+- **No public server required**: Providers run on localhost
+- **No SSL certificates**: Direct P2P connections
+- **Simplified setup**: No firewall/router configuration
+- **Better privacy**: Files never exposed publicly
+- **AI-agent friendly**: Returns local file paths, not URLs
+
+### Configuration
+
+**Provider** (`config.json`):
+```json
+{
+    "provider": {
+        "results": {
+            "storagePath": "/path/to/local/results"
+        }
+    }
+}
+```
+
+**Consumer** (`config.json`):
+```json
+{
+    "consumer": {
+        "enabled": true,
+        "results": {
+            "outputPath": "/path/to/downloaded/results"
+        }
+    }
+}
+```
 
 ---
 
@@ -287,6 +350,12 @@ Each service uses ONE config file containing ALL necessary information:
         "network": "mainnet-beta",
         "rpcUrl": "https://api.mainnet-beta.solana.com",
         "confirmations": 3
+    },
+    "consumer": {
+        "enabled": true,
+        "results": {
+            "outputPath": "/home/user/.bob-client/downloads"
+        }
     }
 }
 ```
@@ -493,6 +562,7 @@ Consumer          Aggregator          Provider
 - status (queued/processing/completed/failed)
 - request_params
 - result_data
+- result_filename (for P2P file streaming)
 - created_at
 - started_at
 - completed_at

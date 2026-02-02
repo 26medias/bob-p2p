@@ -85,7 +85,10 @@ The Client serves dual roles:
     "consumer": {
         "enabled": true,
         "timeout": 30000,
-        "retryAttempts": 3
+        "retryAttempts": 3,
+        "results": {
+            "outputPath": "/path/to/downloaded/results"
+        }
     },
     "security": {
         "rateLimit": {
@@ -167,7 +170,10 @@ The Client serves dual roles:
     "consumer": {
         "enabled": true,
         "timeout": 30000,
-        "retryAttempts": 3
+        "retryAttempts": 3,
+        "results": {
+            "outputPath": "/home/user/.bob-client/downloads"
+        }
     }
 }
 ```
@@ -409,6 +415,108 @@ module.exports = async function generateVideo(params, context) {
     };
 };
 ```
+
+**Important Note on File Streaming**: As of V2, the system uses P2P file streaming instead of public URLs. The `context.saveResult()` function now returns a filename instead of a URL, and results are streamed directly to consumers via the `/job/:jobId/download` endpoint. See the P2P File Streaming section below for details.
+
+---
+
+## P2P File Streaming
+
+### Overview
+
+Instead of requiring providers to run publicly accessible servers with SSL certificates, V2 implements direct P2P file streaming between provider and consumer.
+
+### How It Works
+
+#### Provider Side
+
+1. **Handler saves result file**:
+   ```javascript
+   const filename = await context.saveResult(tempPath, 'result.png');
+   // Returns: "job-123_result.png" (not a URL)
+   ```
+
+2. **File stored locally**:
+   - Saved to `provider.results.storagePath`
+   - Filename stored in database (`result_filename` column)
+
+3. **Streaming endpoint**:
+   - Provider exposes `/job/:jobId/download` endpoint
+   - Streams file directly to consumer
+   - No public URL required
+
+#### Consumer Side
+
+1. **Poll for job completion**:
+   ```javascript
+   const job = await consumer.pollForCompletion(providerUrl, jobId);
+   // job.resultFilename = "job-123_result.png"
+   ```
+
+2. **Automatic file download**:
+   - Consumer detects `resultFilename` field
+   - Streams file from `/job/:jobId/download`
+   - Saves to `consumer.results.outputPath`
+
+3. **Returns local file path**:
+   ```javascript
+   const job = await consumer.callApi(...);
+   console.log(job.localFilePath);
+   // /home/user/.bob-client/downloads/job-123_result.png
+   ```
+
+### Configuration
+
+**Provider** stores results locally:
+```json
+{
+    "provider": {
+        "results": {
+            "storagePath": "/home/user/.bob-provider/results",
+            "retention": 86400
+        }
+    }
+}
+```
+
+**Consumer** downloads to configured directory:
+```json
+{
+    "consumer": {
+        "enabled": true,
+        "results": {
+            "outputPath": "/home/user/.bob-client/downloads"
+        }
+    }
+}
+```
+
+### API Handler Updates
+
+Handlers should return filenames instead of URLs:
+
+```javascript
+// OLD (V1) - Returns URL
+return {
+    imageUrl: "https://provider.com/results/image.png",
+    seed: 123
+};
+
+// NEW (V2) - Returns filename
+const filename = await context.saveResult(imagePath, 'image.png');
+return {
+    filename: filename,  // "job-123_image.png"
+    seed: 123
+};
+```
+
+### Benefits
+
+- **No public server required**: Provider runs on localhost
+- **No SSL certificates**: Simplified setup
+- **No firewall configuration**: Direct P2P connections
+- **AI-agent friendly**: Returns local file paths
+- **Better privacy**: Files never exposed to public internet
 
 ---
 
@@ -813,7 +921,8 @@ CREATE TABLE jobs (
 
     -- Result
     result_data TEXT,  -- JSON
-    result_files TEXT,  -- JSON array of file paths
+    result_filename TEXT,  -- P2P streaming filename
+    result_files TEXT,  -- DEPRECATED: JSON array of file paths
     error_message TEXT,
 
     -- Timestamps
