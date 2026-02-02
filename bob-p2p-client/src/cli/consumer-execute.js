@@ -88,7 +88,11 @@ async function main() {
                 console.log('\nResult:');
                 console.log(JSON.stringify(completedJob.result, null, 2));
             }
-            if (completedJob.resultUrl) {
+            if (completedJob.localFilePath) {
+                console.log(`\nResult file: ${completedJob.localFilePath}`);
+            } else if (completedJob.resultFilename) {
+                console.log(`\nResult available. Download from provider: ${args.provider}/job/${completedJob.jobId}/download`);
+            } else if (completedJob.resultUrl) {
                 console.log(`\nResult URL: ${completedJob.resultUrl}`);
                 console.log(`Download: npm run download ${completedJob.jobId} -- --config config.json --url ${completedJob.resultUrl} --output result.file`);
             }
@@ -117,7 +121,9 @@ async function main() {
                 console.log('\nResult:');
                 console.log(JSON.stringify(completedJob.result, null, 2));
             }
-            if (completedJob.resultUrl) {
+            if (completedJob.localFilePath) {
+                console.log(`\nResult file: ${completedJob.localFilePath}`);
+            } else if (completedJob.resultUrl) {
                 console.log(`\nResult URL: ${completedJob.resultUrl}`);
                 console.log(`Download: npm run download ${completedJob.jobId} -- --config config.json --url ${completedJob.resultUrl} --output result.file`);
             }

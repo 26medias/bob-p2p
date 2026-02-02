@@ -5,12 +5,30 @@
  */
 
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 
 class Consumer {
     constructor(config, solanaClient) {
         this.config = config;
         this.solana = solanaClient;
         this.aggregators = config.aggregators || [];
+
+        // Initialize result output directory
+        if (config.consumer && config.consumer.results && config.consumer.results.outputPath) {
+            this.outputPath = config.consumer.results.outputPath;
+            this.initOutputDirectory();
+        }
+    }
+
+    /**
+     * Initialize output directory for result files
+     */
+    initOutputDirectory() {
+        if (!fs.existsSync(this.outputPath)) {
+            fs.mkdirSync(this.outputPath, { recursive: true });
+            console.log(`Consumer output directory initialized: ${this.outputPath}`);
+        }
     }
 
     /**
@@ -142,7 +160,6 @@ class Consumer {
             timeout: 60000
         });
 
-        const fs = require('fs');
         const writer = fs.createWriteStream(outputPath);
 
         response.data.pipe(writer);
@@ -151,6 +168,27 @@ class Consumer {
             writer.on('finish', resolve);
             writer.on('error', reject);
         });
+    }
+
+    /**
+     * Download job result file via P2P streaming
+     *
+     * @param {string} providerUrl - Provider endpoint
+     * @param {string} jobId - Job identifier
+     * @param {string} resultFilename - Result filename
+     * @returns {Promise<string>} - Local file path
+     */
+    async downloadJobResult(providerUrl, jobId, resultFilename) {
+        const downloadUrl = `${providerUrl}/job/${jobId}/download`;
+        const localPath = path.join(this.outputPath, resultFilename);
+
+        console.log(`Downloading result from provider via P2P...`);
+
+        await this.downloadResult(downloadUrl, localPath);
+
+        console.log(`Result saved to: ${localPath}`);
+
+        return localPath;
     }
 
     /**
@@ -236,6 +274,19 @@ class Consumer {
         console.log('Step 4: Waiting for completion...');
         const completedJob = await this.pollForCompletion(providerUrl, job.jobId);
         console.log(`\nJob completed!`);
+
+        // Step 5: Download result file via P2P if available
+        if (completedJob.resultFilename && this.outputPath) {
+            console.log('\nStep 5: Downloading result file...');
+            const localFilePath = await this.downloadJobResult(
+                providerUrl,
+                completedJob.jobId,
+                completedJob.resultFilename
+            );
+
+            // Add local file path to result
+            completedJob.localFilePath = localFilePath;
+        }
 
         return completedJob;
     }

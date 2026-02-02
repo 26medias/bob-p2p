@@ -150,19 +150,22 @@ class JobExecutor {
      * @param {string} jobId - Job identifier
      * @param {string} sourcePath - Path to result file
      * @param {string} filename - Result filename
-     * @returns {Promise<string>} - Public URL to result
+     * @returns {Promise<string>} - Saved filename with jobId prefix
      */
     async saveResult(jobId, sourcePath, filename) {
-        const destPath = path.join(this.resultStorage, `${jobId}_${filename}`);
+        const savedFilename = `${jobId}_${filename}`;
+        const destPath = path.join(this.resultStorage, savedFilename);
 
         await fs.copyFile(sourcePath, destPath);
 
-        // Generate public URL
-        const resultUrl = `${this.publicEndpoint}/results/${jobId}_${filename}`;
+        // Store filename in job for P2P streaming
+        await this.database.updateJob(jobId, {
+            resultFilename: savedFilename
+        });
 
-        console.log(`Result saved: ${resultUrl}`);
+        console.log(`Result saved: ${destPath}`);
 
-        return resultUrl;
+        return savedFilename;
     }
 
     /**

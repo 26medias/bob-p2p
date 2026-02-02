@@ -56,6 +56,7 @@ class SqliteDatabase {
                 progress_message TEXT,
                 result TEXT,
                 result_url TEXT,
+                result_filename TEXT,
                 error TEXT,
                 created_at INTEGER NOT NULL,
                 started_at INTEGER,
@@ -99,6 +100,19 @@ class SqliteDatabase {
                 created_at INTEGER NOT NULL
             );
         `);
+
+        // Migration: Add result_filename column if it doesn't exist
+        try {
+            this.db.exec(`
+                ALTER TABLE jobs ADD COLUMN result_filename TEXT;
+            `);
+            console.log('Migration: Added result_filename column to jobs table');
+        } catch (error) {
+            // Column already exists, ignore error
+            if (!error.message.includes('duplicate column name')) {
+                throw error;
+            }
+        }
     }
 
     // Queue management
@@ -197,6 +211,7 @@ class SqliteDatabase {
             progressMessage: row.progress_message,
             result: row.result ? JSON.parse(row.result) : null,
             resultUrl: row.result_url,
+            resultFilename: row.result_filename,
             error: row.error,
             createdAt: row.created_at,
             startedAt: row.started_at,
@@ -227,6 +242,10 @@ class SqliteDatabase {
         if (updates.resultUrl !== undefined) {
             fields.push('result_url = ?');
             values.push(updates.resultUrl);
+        }
+        if (updates.resultFilename !== undefined) {
+            fields.push('result_filename = ?');
+            values.push(updates.resultFilename);
         }
         if (updates.error !== undefined) {
             fields.push('error = ?');

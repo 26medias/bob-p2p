@@ -40,12 +40,12 @@ module.exports = async function textToImageHandler(params, context) {
         const tempPath = path.join('/tmp', filename);
         fs.writeFileSync(tempPath, imageBuffer);
 
-        const resultUrl = await context.saveResult(tempPath, filename);
+        const resultFilename = await context.saveResult(tempPath, filename);
 
         await context.updateProgress(100, 'Image generation complete');
 
         return {
-            imageUrl: resultUrl,
+            filename: resultFilename,
             seed: imageSeed,
             cost: result.totalCost,
             prompt,

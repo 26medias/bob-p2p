@@ -196,12 +196,48 @@ class ProviderServer {
                     progress: job.progress,
                     progressMessage: job.progressMessage,
                     result: job.result,
-                    resultUrl: job.resultUrl,
+                    resultFilename: job.resultFilename,
                     error: job.error,
                     createdAt: job.createdAt,
                     startedAt: job.startedAt,
                     completedAt: job.completedAt
                 });
+
+            } catch (error) {
+                res.status(404).json({
+                    error: error.message
+                });
+            }
+        });
+
+        // Download job result file (P2P streaming)
+        this.app.get('/job/:jobId/download', async (req, res) => {
+            try {
+                const { jobId } = req.params;
+                const job = await this.jobs.getJob(jobId);
+
+                if (job.status !== 'completed') {
+                    return res.status(400).json({
+                        error: 'Job not completed yet'
+                    });
+                }
+
+                if (!job.resultFilename) {
+                    return res.status(404).json({
+                        error: 'No result file available for this job'
+                    });
+                }
+
+                const filepath = path.join(this.jobs.resultStorage, job.resultFilename);
+
+                if (!fs.existsSync(filepath)) {
+                    return res.status(404).json({
+                        error: 'Result file not found on disk'
+                    });
+                }
+
+                // Stream the file to consumer
+                res.sendFile(filepath);
 
             } catch (error) {
                 res.status(404).json({

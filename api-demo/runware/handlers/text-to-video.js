@@ -46,12 +46,12 @@ module.exports = async function textToVideoHandler(params, context) {
         const tempPath = path.join('/tmp', filename);
         fs.writeFileSync(tempPath, videoBuffer);
 
-        const resultUrl = await context.saveResult(tempPath, filename);
+        const resultFilename = await context.saveResult(tempPath, filename);
 
         await context.updateProgress(100, 'Video generation complete');
 
         return {
-            videoUrl: resultUrl,
+            filename: resultFilename,
             seed: videoSeed,
             cost: result.cost,
             prompt,
