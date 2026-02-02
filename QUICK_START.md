@@ -497,6 +497,16 @@ npm run job <job-id> -- --config config.json             # Check job status
 npm run download <job-id> -- --output file.mp4           # Download result
 ```
 
+### Aggregator Management
+```bash
+npm run aggregator list -- --config config.json          # List all aggregators
+npm run aggregator add <url> -- --config config.json     # Add aggregator
+npm run aggregator remove <index> -- --config config.json # Remove aggregator
+npm run aggregator test -- --config config.json          # Test connectivity
+```
+
+**Note**: Changes to aggregators require restart of provider/consumer. See [AGGREGATOR_MANAGEMENT.md](AGGREGATOR_MANAGEMENT.md) for details.
+
 ---
 
 ## Support

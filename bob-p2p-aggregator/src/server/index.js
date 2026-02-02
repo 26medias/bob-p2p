@@ -130,25 +130,36 @@ class AggregatorServer {
             const signature = req.headers['x-signature'];
             const apiSpec = req.body;
 
+            console.log('\n=== Registration Request ===');
+            console.log('Provider Address:', providerAddress);
+            console.log('API ID:', apiSpec.id);
+            console.log('Signature (first 50 chars):', signature ? signature.substring(0, 50) + '...' : 'MISSING');
+
             if (!providerAddress || !signature) {
-                return res.status(400).json({ 
+                console.log('✗ Missing provider address or signature');
+                return res.status(400).json({
                     error: { code: 'INVALID_REQUEST', message: 'Missing provider address or signature' }
                 });
             }
 
             // Verify signature
             const message = JSON.stringify(apiSpec);
+            console.log('Message length:', message.length);
             const signatureBuffer = Buffer.from(signature, 'base64');
             const verified = this.solana.verifySignature(message, signatureBuffer, providerAddress);
 
             if (!verified) {
+                console.log('✗ Signature verification FAILED');
                 return res.status(401).json({
                     error: { code: 'UNAUTHORIZED', message: 'Signature verification failed' }
                 });
             }
 
+            console.log('✓ Signature verified');
+
             // Validate API spec
             if (!apiSpec.id || !apiSpec.name || !apiSpec.endpoint || !apiSpec.pricing) {
+                console.log('✗ Invalid API specification');
                 return res.status(400).json({
                     error: { code: 'INVALID_REQUEST', message: 'Invalid API specification' }
                 });
@@ -162,6 +173,7 @@ class AggregatorServer {
             };
 
             this.db.registerApi(apiData);
+            console.log(`✓ API registered: ${apiSpec.id}`);
 
             res.status(201).json({
                 apiId: apiSpec.id,

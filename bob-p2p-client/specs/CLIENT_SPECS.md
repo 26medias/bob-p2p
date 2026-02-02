@@ -1230,6 +1230,34 @@ bob-client download <job-id> --output result.mp4 --config config.json
 bob-client balance --config config.json
 ```
 
+### Aggregator Management
+
+```bash
+# List all configured aggregators with status
+npm run aggregator list -- --config config.json
+
+# Add a new aggregator
+npm run aggregator add https://aggregator.example.com:8080 -- --config config.json
+
+# Remove an aggregator by index or URL
+npm run aggregator remove 2 -- --config config.json
+npm run aggregator remove https://aggregator.example.com:8080 -- --config config.json
+
+# Test connectivity to all aggregators
+npm run aggregator test -- --config config.json
+
+# Show help
+npm run aggregator -- --config config.json
+```
+
+**Multi-Aggregator Behavior:**
+- Provider mode registers APIs with **all** configured aggregators
+- Consumer mode searches **all** aggregators and merges results
+- System continues working if some aggregators are offline
+- Changes to aggregator list require restart to take effect
+
+See [AGGREGATOR_MANAGEMENT.md](../../AGGREGATOR_MANAGEMENT.md) for complete guide.
+
 ---
 
 ## Testing

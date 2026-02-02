@@ -13,7 +13,8 @@
     "download": "node src/cli/consumer-download.js",
     "earnings": "node src/cli/provider-earnings.js",
     "queue-status": "node src/cli/provider-queue.js",
-    "jobs": "node src/cli/provider-jobs.js"
+    "jobs": "node src/cli/provider-jobs.js",
+    "aggregator": "node src/cli/aggregator-manage.js"
   },
   "keywords": [
     "p2p",

@@ -182,6 +182,55 @@ npm run download JOB_ID -- \
   --output result.png
 ```
 
+## Managing Aggregators
+
+The client can connect to multiple aggregators for redundancy and broader API discovery.
+
+### List Aggregators
+
+View all configured aggregators with status:
+
+```bash
+npm run aggregator list -- --config config.json
+```
+
+### Add Aggregator
+
+Add a new aggregator to your configuration:
+
+```bash
+npm run aggregator add https://aggregator.example.com:8080 -- --config config.json
+```
+
+The CLI will test connectivity and show aggregator information before adding.
+
+### Remove Aggregator
+
+Remove by index or URL:
+
+```bash
+# By index (from list command)
+npm run aggregator remove 2 -- --config config.json
+
+# By URL
+npm run aggregator remove https://aggregator.example.com:8080 -- --config config.json
+```
+
+### Test Connectivity
+
+Test all configured aggregators:
+
+```bash
+npm run aggregator test -- --config config.json
+```
+
+**How Multi-Aggregator Works:**
+- **Provider Mode**: Registers APIs with all aggregators
+- **Consumer Mode**: Searches across all aggregators and merges results
+- **Changes**: Require restart to take effect
+
+See [AGGREGATOR_MANAGEMENT.md](../AGGREGATOR_MANAGEMENT.md) for detailed guide.
+
 ## Creating Custom Handlers
 
 Handlers are Node.js modules that implement your API logic.

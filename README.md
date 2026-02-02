@@ -465,6 +465,32 @@ bob-client execute <api-id> \
 bob-client job <job-id> --config /path/to/config.json
 ```
 
+### Managing Aggregators
+
+Clients can connect to multiple aggregators for redundancy and broader API discovery.
+
+```bash
+# List configured aggregators
+npm run aggregator list -- --config config.json
+
+# Add a new aggregator
+npm run aggregator add https://aggregator.example.com:8080 -- --config config.json
+
+# Remove an aggregator
+npm run aggregator remove 2 -- --config config.json
+
+# Test connectivity
+npm run aggregator test -- --config config.json
+```
+
+**How it works:**
+- **Provider Mode**: Registers APIs with all configured aggregators
+- **Consumer Mode**: Searches across all aggregators and merges results
+- **Automatic Fallback**: System continues working if some aggregators are offline
+- **Config-Based**: Changes require restart to take effect
+
+See [AGGREGATOR_MANAGEMENT.md](AGGREGATOR_MANAGEMENT.md) for detailed guide.
+
 ---
 
 ## Data Flow Diagrams

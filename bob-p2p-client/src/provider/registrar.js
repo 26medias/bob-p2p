@@ -64,6 +64,13 @@ class AggregatorRegistrar {
     }
 
     /**
+     * Get provider wallet address (from keypair, not config)
+     */
+    getProviderAddress() {
+        return this.keypair.publicKey.toBase58();
+    }
+
+    /**
      * Register all APIs with aggregators
      */
     async registerAll() {
@@ -95,34 +102,14 @@ class AggregatorRegistrar {
      * Register with a single aggregator
      */
     async registerWithAggregator(aggregatorUrl, apis) {
-        const payload = {
-            providerAddress: this.config.wallet.address,
-            endpoint: this.config.provider.publicEndpoint,
-            apis: apis.map(api => ({
-                id: api.id,
-                name: api.name,
-                description: api.description,
-                version: api.version,
-                method: api.method,
-                pricing: api.pricing,
-                capacity: api.capacity,
-                execution: api.execution,
-                schema: api.schema,
-                category: api.category,
-                tags: api.tags
-            })),
-            token: {
-                symbol: this.config.token.symbol,
-                mint: this.config.token.mint
-            }
-        };
+        const providerAddress = this.getProviderAddress();
 
         // For each API, register separately (aggregator expects one API per registration)
         for (const api of apis) {
             const apiPayload = {
                 ...api,
                 endpoint: this.config.provider.publicEndpoint,
-                provider_address: this.config.wallet.address
+                provider_address: providerAddress
             };
 
             // Sign payload
@@ -132,12 +119,12 @@ class AggregatorRegistrar {
             const signatureBase64 = Buffer.from(signature).toString('base64');
 
             // Send registration
-            const response = await axios.post(
+            await axios.post(
                 `${aggregatorUrl}/api/register`,
                 apiPayload,
                 {
                     headers: {
-                        'X-Provider-Address': this.config.wallet.address,
+                        'X-Provider-Address': providerAddress,
                         'X-Signature': signatureBase64,
                         'Content-Type': 'application/json'
                     },
@@ -145,8 +132,6 @@ class AggregatorRegistrar {
                 }
             );
         }
-
-        return response.data;
     }
 
     /**
@@ -157,8 +142,9 @@ class AggregatorRegistrar {
             return;
         }
 
+        const providerAddress = this.getProviderAddress();
         const payload = {
-            providerAddress: this.config.wallet.address,
+            providerAddress: providerAddress,
             timestamp: Date.now()
         };
 
