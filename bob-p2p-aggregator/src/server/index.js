@@ -2,10 +2,11 @@ const express = require('express');
 const cors = require('cors');
 
 class AggregatorServer {
-    constructor(database, solana, config) {
+    constructor(database, solana, config, relayNode = null) {
         this.db = database;
         this.solana = solana;
         this.config = config;
+        this.relayNode = relayNode;
         this.app = express();
         this.setupMiddleware();
         this.setupRoutes();
@@ -25,6 +26,7 @@ class AggregatorServer {
         // Public endpoints
         this.app.get('/health', this.handleHealth.bind(this));
         this.app.get('/info', this.handleInfo.bind(this));
+        this.app.get('/p2p/bootstrap', this.handleBootstrap.bind(this));
 
         // Search endpoints
         this.app.get('/api/search', this.handleSearch.bind(this));
@@ -60,8 +62,8 @@ class AggregatorServer {
     handleInfo(req, res) {
         const stats = this.db.getStats();
         const categories = this.db.getCategories();
-        
-        res.json({
+
+        const info = {
             name: 'Bob P2P Aggregator',
             version: '2.0.0',
             accessType: this.config.access.type,
@@ -73,6 +75,33 @@ class AggregatorServer {
                 activeAPIs: stats.active,
                 categories: categories.map(c => c.name)
             }
+        };
+
+        // Add P2P info if relay is running
+        if (this.relayNode) {
+            info.p2p = {
+                enabled: true,
+                peerId: this.relayNode.getPeerId(),
+                bootstrap: this.relayNode.getBootstrapMultiaddrs()
+            };
+        }
+
+        res.json(info);
+    }
+
+    handleBootstrap(req, res) {
+        if (!this.relayNode) {
+            return res.status(404).json({
+                error: { code: 'NOT_AVAILABLE', message: 'P2P relay not enabled' }
+            });
+        }
+
+        const bootstrapAddrs = this.relayNode.getBootstrapMultiaddrs();
+
+        res.json({
+            peerId: this.relayNode.getPeerId(),
+            bootstrap: bootstrapAddrs,
+            multiaddrs: this.relayNode.getMultiaddrs()
         });
     }
 

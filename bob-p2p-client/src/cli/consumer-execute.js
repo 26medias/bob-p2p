@@ -14,10 +14,12 @@
 const minimist = require('minimist');
 const { loadConfig } = require('../utils/config');
 const SolanaClient = require('../solana');
-const Consumer = require('../consumer');
+const HybridConsumer = require('../consumer/hybrid-consumer');
 
 async function main() {
     const args = minimist(process.argv.slice(2));
+    let config = null;
+    let consumer = null;
 
     try {
         // Get API ID
@@ -34,7 +36,7 @@ async function main() {
             process.exit(1);
         }
 
-        const config = loadConfig(args.config);
+        config = loadConfig(args.config);
 
         // Get provider URL
         if (!args.provider) {
@@ -56,9 +58,15 @@ async function main() {
             process.exit(1);
         }
 
-        // Initialize consumer
+        // Initialize consumer with P2P support
         const solana = new SolanaClient(config);
-        const consumer = new Consumer(config, solana);
+        consumer = new HybridConsumer(config, solana);
+
+        // Start P2P node if enabled
+        if (config.p2p?.enabled) {
+            console.log('Starting P2P node...');
+            await consumer.start();
+        }
 
         // Check if using existing queue code or full workflow
         if (args['queue-code'] && args['transaction']) {
@@ -132,6 +140,15 @@ async function main() {
     } catch (error) {
         console.error('Error:', error.message);
         process.exit(1);
+    } finally {
+        // Cleanup P2P node
+        if (config?.p2p?.enabled && consumer) {
+            try {
+                await consumer.stop();
+            } catch (e) {
+                // Ignore cleanup errors
+            }
+        }
     }
 }
 

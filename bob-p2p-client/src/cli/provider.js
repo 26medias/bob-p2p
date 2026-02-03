@@ -14,6 +14,7 @@ const QueueManager = require('../queue');
 const PaymentVerifier = require('../payment');
 const JobExecutor = require('../jobs');
 const ProviderServer = require('../provider/server');
+const P2PProviderServer = require('../provider/p2p-server');
 const AggregatorRegistrar = require('../provider/registrar');
 
 async function main() {
@@ -84,19 +85,32 @@ async function main() {
             await jobExecutor.registerHandler(api);
         }
 
-        // Create and start server
-        console.log('Starting provider server...');
-        const server = new ProviderServer(config, queueManager, paymentVerifier, jobExecutor);
-        server.start();
+        // Create and start servers
+        let p2pServer = null;
 
-        console.log(`\nProvider server listening on http://0.0.0.0:${config.provider.port}`);
-        console.log(`Public endpoint: ${config.provider.publicEndpoint}`);
+        // Start P2P server if enabled
+        if (config.p2p && config.p2p.enabled !== false) {
+            console.log('Starting P2P provider server...');
+            p2pServer = new P2PProviderServer(config, queueManager, paymentVerifier, jobExecutor);
+            await p2pServer.start();
+            console.log();
+        }
+
+        // Start HTTP server if enabled (default: enabled for backward compatibility)
+        if (!config.provider.httpDisabled) {
+            console.log('Starting HTTP provider server...');
+            const server = new ProviderServer(config, queueManager, paymentVerifier, jobExecutor);
+            server.start();
+            console.log(`HTTP server listening on http://0.0.0.0:${config.provider.port}`);
+            console.log(`Public endpoint: ${config.provider.publicEndpoint}`);
+        }
+
         console.log(`Wallet: ${config.wallet.address}\n`);
 
         // Register with aggregators
         if (config.aggregators && config.aggregators.length > 0) {
             console.log('Registering with aggregators...');
-            const registrar = new AggregatorRegistrar(config, queueManager);
+            const registrar = new AggregatorRegistrar(config, queueManager, p2pServer);
             await registrar.registerAll();
             console.log();
         }

@@ -522,9 +522,87 @@ tail -f aggregator.log
 screen -r bob-aggregator
 ```
 
+## Production Deployment
+
+### Deploy to Google Cloud (E2-micro)
+
+The aggregator includes automated deployment scripts for GCP.
+
+**Prerequisites:**
+1. GCP service account JSON file saved as `gcp.json`
+2. Service account must have Compute Admin and Service Account User roles
+3. `gcloud` CLI installed
+4. `jq` installed (for JSON parsing)
+
+**Initial Deployment:**
+
+```bash
+cd /path/to/bob-p2p-aggregator
+./deploy.sh
+```
+
+This will:
+- Create an E2-micro VM instance (free tier eligible)
+- Install Node.js 18
+- Upload and install the aggregator
+- Create systemd service
+- Configure firewall rules
+- Start the service
+
+**Update Existing Deployment:**
+
+```bash
+./update.sh
+```
+
+This will:
+- Upload latest code
+- Install dependencies
+- Restart service
+- Verify health
+
+**Deployment Output:**
+
+```
+Instance Information:
+  Name: bob-aggregator
+  Zone: us-central1-a
+  External IP: 34.x.x.x
+
+Aggregator URLs:
+  Health: http://34.x.x.x:8080/health
+  Info: http://34.x.x.x:8080/info
+  Search: http://34.x.x.x:8080/api/search
+```
+
+**Managing the Deployment:**
+
+```bash
+# SSH to instance
+gcloud compute ssh bob-aggregator --zone=us-central1-a --project=YOUR_PROJECT
+
+# View logs
+gcloud compute ssh bob-aggregator --zone=us-central1-a --command='sudo journalctl -u bob-aggregator -f'
+
+# Restart service
+gcloud compute ssh bob-aggregator --zone=us-central1-a --command='sudo systemctl restart bob-aggregator'
+
+# Check status
+gcloud compute ssh bob-aggregator --zone=us-central1-a --command='sudo systemctl status bob-aggregator'
+```
+
+**Cost:**
+- E2-micro instances are free tier eligible (1 instance/month)
+- Network egress: First 1GB/month free
+- Estimated: $0-7/month depending on traffic
+
+### Manual Deployment (Any Linux Server)
+
+See systemd service example in the deployment section above.
+
 ## Updating
 
-### Pull Latest Changes
+### Update Local Development
 
 ```bash
 cd /path/to/bob-p2p-aggregator
@@ -532,16 +610,28 @@ git pull origin main
 npm install
 ```
 
-### Restart Service
+### Update Production (GCP)
 
 ```bash
-# If using systemd
+./update.sh
+```
+
+### Update Production (Manual)
+
+```bash
+# SSH to server
+ssh your-server
+
+# Pull changes
+cd /opt/bob-aggregator
+git pull origin main
+npm install --production
+
+# Restart service
 sudo systemctl restart bob-aggregator
 
-# If using screen
-screen -r bob-aggregator
-# Ctrl+C to stop, then restart
-node src/index.js --config config.json
+# Check status
+sudo systemctl status bob-aggregator
 ```
 
 ## Development

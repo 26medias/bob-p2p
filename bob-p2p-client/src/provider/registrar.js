@@ -10,9 +10,10 @@ const bs58 = require('bs58');
 const { Keypair } = require('@solana/web3.js');
 
 class AggregatorRegistrar {
-    constructor(config, queueManager) {
+    constructor(config, queueManager, p2pServer = null) {
         this.config = config;
         this.queue = queueManager;
+        this.p2pServer = p2pServer;
         this.aggregators = config.aggregators || [];
 
         // Load keypair for signing
@@ -99,17 +100,85 @@ class AggregatorRegistrar {
     }
 
     /**
+     * Get circuit relay addresses via aggregator
+     * @param {string} aggregatorUrl - Aggregator base URL
+     * @returns {Promise<string[]>} - Array of circuit relay multiaddrs
+     */
+    async getCircuitRelayAddresses(aggregatorUrl) {
+        try {
+            // Fetch bootstrap/relay info from aggregator
+            const response = await axios.get(`${aggregatorUrl}/p2p/bootstrap`, {
+                timeout: 5000
+            });
+
+            const relayPeerId = response.data.peerId;
+            const providerPeerId = this.p2pServer.getNode().getPeerId();
+
+            if (!relayPeerId || !providerPeerId) {
+                console.warn('Could not get relay or provider peer ID');
+                return [];
+            }
+
+            // Construct circuit relay address
+            // Format: /p2p/RELAY_PEER_ID/p2p-circuit/p2p/PROVIDER_PEER_ID
+            const circuitAddr = `/p2p/${relayPeerId}/p2p-circuit/p2p/${providerPeerId}`;
+
+            console.log(`Circuit relay address: ${circuitAddr}`);
+            return [circuitAddr];
+
+        } catch (error) {
+            console.warn('Failed to get circuit relay info:', error.message);
+            return [];
+        }
+    }
+
+    /**
      * Register with a single aggregator
      */
     async registerWithAggregator(aggregatorUrl, apis) {
         const providerAddress = this.getProviderAddress();
 
+        // Determine endpoint(s) to register
+        let endpoints = [];
+
+        // Add P2P multiaddrs if P2P is enabled
+        if (this.p2pServer) {
+            // First try public addresses (not localhost/private)
+            let multiaddrs = this.p2pServer.getPublicMultiaddrs();
+
+            // If no public IP detected, use circuit relay through aggregator
+            if (multiaddrs.length === 0) {
+                console.log('No public IP detected, attempting circuit relay setup...');
+                multiaddrs = await this.getCircuitRelayAddresses(aggregatorUrl);
+            }
+
+            if (multiaddrs.length > 0) {
+                endpoints.push(...multiaddrs);
+                console.log('Registering P2P multiaddrs:');
+                multiaddrs.forEach(addr => console.log(`  ${addr}`));
+            } else {
+                console.warn('Warning: No reachable P2P addresses available');
+            }
+        }
+
+        // Add HTTP endpoint if not disabled (backward compatibility)
+        if (!this.config.provider.httpDisabled && this.config.provider.publicEndpoint) {
+            endpoints.push(this.config.provider.publicEndpoint);
+            console.log('Registering HTTP endpoint:', this.config.provider.publicEndpoint);
+        }
+
+        if (endpoints.length === 0) {
+            throw new Error('No endpoints to register (neither P2P nor HTTP configured)');
+        }
+
         // For each API, register separately (aggregator expects one API per registration)
         for (const api of apis) {
             const apiPayload = {
                 ...api,
-                endpoint: this.config.provider.publicEndpoint,
-                provider_address: providerAddress
+                endpoint: endpoints[0], // Primary endpoint
+                endpoints: endpoints,   // All available endpoints
+                provider_address: providerAddress,
+                transport: this.p2pServer ? 'p2p' : 'http' // Indicate transport type
             };
 
             // Sign payload
@@ -143,31 +212,26 @@ class AggregatorRegistrar {
         }
 
         const providerAddress = this.getProviderAddress();
-        const payload = {
-            providerAddress: providerAddress,
-            timestamp: Date.now()
-        };
-
-        const message = JSON.stringify(payload);
-        const messageBytes = Buffer.from(message, 'utf8');
-        const signature = nacl.sign.detached(messageBytes, this.keypair.secretKey);
-        const signatureBase58 = bs58.encode(signature);
+        const apis = this.queue.getAllApis();
 
         for (const aggregatorUrl of this.aggregators) {
-            try {
-                await axios.post(
-                    `${aggregatorUrl}/provider/heartbeat`,
-                    payload,
-                    {
-                        headers: {
-                            'X-Signature': signatureBase58,
-                            'Content-Type': 'application/json'
-                        },
-                        timeout: 5000
-                    }
-                );
-            } catch (error) {
-                console.error(`Heartbeat failed for ${aggregatorUrl}:`, error.message);
+            // Send heartbeat for each API
+            for (const api of apis) {
+                try {
+                    await axios.post(
+                        `${aggregatorUrl}/api/${api.id}/heartbeat`,
+                        {},
+                        {
+                            headers: {
+                                'X-Provider-Address': providerAddress,
+                                'Content-Type': 'application/json'
+                            },
+                            timeout: 5000
+                        }
+                    );
+                } catch (error) {
+                    console.error(`Heartbeat failed for ${api.id} at ${aggregatorUrl}:`, error.message);
+                }
             }
         }
     }

@@ -14,6 +14,7 @@ config.json
 api.json
 api-*.json
 config-*.json
+gcp.json
 
 # Runtime data
 pids

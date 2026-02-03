@@ -1,0 +1,10 @@
+node_modules
+.git
+*.log
+gcp.json
+deploy.sh
+deploy-cloud-run.sh
+update.sh
+*.md
+.dockerignore
+Dockerfile

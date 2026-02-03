@@ -72,11 +72,14 @@ function validateConfig(config) {
 
     // Provider (if enabled)
     if (config.provider && config.provider.enabled) {
-        if (!config.provider.port) {
-            throw new Error('Config missing: provider.port');
+        // HTTP port required unless HTTP is disabled
+        if (!config.provider.httpDisabled && !config.provider.port) {
+            throw new Error('Config missing: provider.port (or set httpDisabled: true)');
         }
-        if (!config.provider.publicEndpoint) {
-            throw new Error('Config missing: provider.publicEndpoint');
+        // publicEndpoint required unless HTTP is disabled or P2P is enabled
+        const p2pEnabled = config.p2p && config.p2p.enabled !== false;
+        if (!config.provider.httpDisabled && !p2pEnabled && !config.provider.publicEndpoint) {
+            throw new Error('Config missing: provider.publicEndpoint (or enable P2P or set httpDisabled: true)');
         }
         if (!config.provider.database) {
             throw new Error('Config missing: provider.database');
@@ -89,6 +92,15 @@ function validateConfig(config) {
         }
         if (!config.provider.results.storagePath) {
             throw new Error('Config missing: provider.results.storagePath');
+        }
+    }
+
+    // P2P (if enabled)
+    if (config.p2p && config.p2p.enabled !== false) {
+        // P2P config is mostly optional with sensible defaults
+        // Validate bootstrap peers if provided
+        if (config.p2p.bootstrap && !Array.isArray(config.p2p.bootstrap)) {
+            throw new Error('Config invalid: p2p.bootstrap must be an array');
         }
     }
 
